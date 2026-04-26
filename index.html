@@ -547,9 +547,9 @@
         </svg>
       </div>
       <h3 class="success-title">¡Pedido registrado con éxito!</h3>
-      <p style="font-size:.86rem;color:var(--text-light);margin-bottom:3px;">Tu pedido fue registrado correctamente.</p>
+      <p style="font-size:.86rem;color:var(--text-light);margin-bottom:3px;">Tu número de pedido es:</p>
       <div class="success-order" id="successOrderNum">#—</div>
-      <p class="success-desc">El misionero de referencia tiene acceso al registro. Coordiná el retiro con él/ella.</p>
+      <p class="success-desc">Guardá este número. Lo vas a necesitar al momento del retiro.</p>
       <button class="btn-new" onclick="resetForm()">+ Registrar otro pedido</button>
     </div>
   </div>
@@ -588,17 +588,14 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-  const CONFIG = {
-    scriptUrl: "https://script.google.com/macros/s/AKfycbxpamD1GJheJ_1fBfBYsNqbLd75AiuUnqitQ5OWt-Ff1ujYw-BonBJhPt4VTc6bfIZ3/exec",
-    precio: null,
-    orderPrefix: "PM"
-  };
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5CFQAxanLqToGVShlzSePdJcDsYWW_9UxdjJ6pUqIfcfB6CnlUs2x99XUa_EfYW0vpQ/exec";
 
-  let orderCounter = 1;
-
-  if (CONFIG.precio) {
-    document.getElementById('priceDisplay').textContent = "$" + CONFIG.precio.toLocaleString('es-AR');
-  }
+  // Al cargar la página, consulta el próximo número de pedido
+  let nextOrderNum = "...";
+  fetch(SCRIPT_URL)
+    .then(r => r.json())
+    .then(data => { nextOrderNum = data.nextNum; })
+    .catch(() => { nextOrderNum = "?"; });
 
   function selectPill(el, name, value) {
     document.querySelectorAll('.pill-label').forEach(p => {
@@ -627,21 +624,18 @@
     let valid = true;
     if (!document.getElementById('nombre').value.trim()) { setError('nombre','nombre-err'); valid=false; }
     if (!document.getElementById('telefono').value.trim()) { setError('telefono','telefono-err'); valid=false; }
-    if (!parseInt(document.getElementById('cantidad').value) >= 1) { setError('cantidad','cantidad-err'); valid=false; }
+    const cant = parseInt(document.getElementById('cantidad').value);
+    if (!cant || cant < 1) { setError('cantidad','cantidad-err'); valid=false; }
     if (!document.getElementById('metodoPago').value) { setError('metodoPago','metodoPago-err'); valid=false; }
     if (!document.getElementById('misionero').value) { setError('misionero','misionero-err'); valid=false; }
     if (!document.querySelector('input[name="turno"]:checked')) { showErr('turno-err'); valid=false; }
     return valid;
   }
 
-  function generateOrderNumber() {
-    const n = orderCounter++;
-    return CONFIG.orderPrefix + '-' + n;
-  }
-
   function handleSubmitClick() {
     if (!validateForm()) return;
     const nombre    = document.getElementById('nombre').value.trim();
+    const telefono  = document.getElementById('telefono').value.trim();
     const cantidad  = document.getElementById('cantidad').value;
     const metodo    = document.getElementById('metodoPago').value;
     const misionero = document.getElementById('misionero').value;
@@ -650,17 +644,17 @@
     const yaPago    = document.getElementById('yaPago').checked;
     const sinGuarn  = document.getElementById('sinGuarnicion').checked;
 
-    const telefono  = document.getElementById('telefono').value.trim();
     const rows = [
-      { label: "Comprador",           value: nombre },
-      { label: "Teléfono",            value: telefono },
-      { label: "Cantidad de pollos",  value: cantidad + ' pollo' + (cantidad > 1 ? 's' : ''), highlight: true },
-      { label: "Método de pago",      value: metodo, highlight: true },
-      { label: "Turno de retiro",     value: turno === 'Indistinto' ? 'Indistinto' : turno + ' hs' },
-      { label: "Misionero referencia",value: misionero },
-      { label: "Es donación",         value: esDon ? "Sí (no retira pollo)" : "No" },
-      { label: "Ya pagó previamente", value: yaPago ? "Sí" : "No" },
-      { label: "Sin guarnición",      value: sinGuarn ? "Sí" : "No" },
+      { label: "N° de pedido",         value: "PM-" + nextOrderNum, highlight: true },
+      { label: "Comprador",            value: nombre },
+      { label: "Teléfono",             value: telefono },
+      { label: "Cantidad de pollos",   value: cantidad + ' pollo' + (cantidad > 1 ? 's' : ''), highlight: true },
+      { label: "Método de pago",       value: metodo, highlight: true },
+      { label: "Turno de retiro",      value: turno === 'Indistinto' ? 'Indistinto' : turno + ' hs' },
+      { label: "Misionero referencia", value: misionero },
+      { label: "Es donación",          value: esDon ? "Sí (no retira pollo)" : "No" },
+      { label: "Ya pagó previamente",  value: yaPago ? "Sí" : "No" },
+      { label: "Sin guarnición",       value: sinGuarn ? "Sí" : "No" },
     ];
 
     document.getElementById('summaryRows').innerHTML = rows.map(r =>
@@ -681,6 +675,7 @@
   async function confirmOrder() {
     const btn = document.getElementById('btnConfirm');
     btn.classList.add('loading'); btn.disabled = true;
+
     const payload = {
       nombre:        document.getElementById('nombre').value.trim(),
       telefono:      document.getElementById('telefono').value.trim(),
@@ -691,16 +686,19 @@
       esDonacion:    document.getElementById('esDonacion').checked,
       yaPago:        document.getElementById('yaPago').checked,
       sinGuarnicion: document.getElementById('sinGuarnicion').checked,
-      numeroPedido:  null
     };
+
     try {
-      await fetch(CONFIG.scriptUrl, {
-        method: "POST", mode: "no-cors",
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+      const confirmedNum = "PM-" + nextOrderNum;
+      nextOrderNum = (parseInt(nextOrderNum) || 0) + 1;
       closeModal();
-      showSuccessScreen("✓ Enviado");
+      showSuccessScreen(confirmedNum);
     } catch(err) {
       console.error(err);
       closeModal();

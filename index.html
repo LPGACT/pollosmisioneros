@@ -239,7 +239,7 @@ footer{background:var(--charcoal);padding:28px 20px;text-align:center}
 </div>
 <div class="toast-container" id="toastContainer"></div>
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycby5SEdoR-fgxxF3BTiO3RZkdZG6BEvpgWrbt6-pvYbnKivTXviCQ4ABRkHt5vddbrFX/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyDVyaBCblqy4uxO4mHUBWcuTmDG06ppbjjr6zF4kw5ZBKdmTkg_WSFpPbZXmrMFv0XNQ/exec";
   let nextOrderNum = null;
 
   fetch(GAS_URL + "?action=nextNum")
@@ -303,7 +303,9 @@ footer{background:var(--charcoal);padding:28px 20px;text-align:center}
   async function confirmOrder() {
     const btn = document.getElementById('btnConfirm');
     btn.classList.add('loading'); btn.disabled = true;
-    const payload = {
+
+    const params = new URLSearchParams({
+      action:        "submit",
       nombre:        document.getElementById('nombre').value.trim(),
       telefono:      document.getElementById('telefono').value.trim(),
       cantidad:      parseInt(document.getElementById('cantidad').value),
@@ -313,19 +315,20 @@ footer{background:var(--charcoal);padding:28px 20px;text-align:center}
       esDonacion:    document.getElementById('esDonacion').checked,
       yaPago:        document.getElementById('yaPago').checked,
       sinGuarnicion: document.getElementById('sinGuarnicion').checked,
-    };
+    });
+
     try {
-      await fetch(GAS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const confirmedNum = nextOrderNum ? 'PM-' + nextOrderNum : 'Registrado';
-      if (nextOrderNum) nextOrderNum++;
-      closeModal();
-      showSuccessScreen(confirmedNum);
+      const resp = await fetch(GAS_URL + "?" + params.toString());
+      const result = await resp.json();
+      if (result.ok) {
+        nextOrderNum = parseInt(result.numeroPedido.replace("PM-","")) + 1;
+        closeModal();
+        showSuccessScreen(result.numeroPedido);
+      } else {
+        throw new Error(result.error);
+      }
     } catch(err) {
+      console.error(err);
       showToast("Error al enviar. Intentá de nuevo.", "error");
     } finally {
       btn.classList.remove('loading'); btn.disabled = false;

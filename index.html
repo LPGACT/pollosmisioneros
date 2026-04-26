@@ -547,9 +547,9 @@
         </svg>
       </div>
       <h3 class="success-title">¡Pedido registrado con éxito!</h3>
-      <p style="font-size:.86rem;color:var(--text-light);margin-bottom:3px;">Tu número de pedido es:</p>
+      <p style="font-size:.86rem;color:var(--text-light);margin-bottom:3px;">Tu pedido fue registrado correctamente.</p>
       <div class="success-order" id="successOrderNum">#—</div>
-      <p class="success-desc">Guardá este número. Lo vas a necesitar al momento del retiro.</p>
+      <p class="success-desc">El misionero de referencia tiene acceso al registro. Coordiná el retiro con él/ella.</p>
       <button class="btn-new" onclick="resetForm()">+ Registrar otro pedido</button>
     </div>
   </div>
@@ -691,17 +691,16 @@
       esDonacion:    document.getElementById('esDonacion').checked,
       yaPago:        document.getElementById('yaPago').checked,
       sinGuarnicion: document.getElementById('sinGuarnicion').checked,
+      numeroPedido:  null
     };
     try {
-      const resp = await fetch(CONFIG.scriptUrl, {
-        method: "POST",
+      await fetch(CONFIG.scriptUrl, {
+        method: "POST", mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const result = await resp.json();
-      const orderNum = result.numeroPedido || "PM-?";
       closeModal();
-      showSuccessScreen(orderNum);
+      showSuccessScreen("✓ Enviado");
     } catch(err) {
       console.error(err);
       closeModal();

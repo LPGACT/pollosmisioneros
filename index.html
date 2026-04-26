@@ -589,7 +589,7 @@
 
 <script>
   const CONFIG = {
-    scriptUrl: "https://script.google.com/macros/s/AKfycby668KscFPc_mFug_giPbJJgeM7-7RrPHdIwCpaf3Ebrjl1xgs5qBi-RRl8qSV3DVotpA/exec",
+    scriptUrl: "https://script.google.com/macros/s/AKfycbwSHfakHCjlDoAZMM4Y8iSt-7GGmffepkv6d6VR7-yFjZ-kZZeMyCVD5hZkRKsMdp4qYQ/exec",
     precio: null,
     orderPrefix: "PM"
   };
@@ -681,9 +681,7 @@
   async function confirmOrder() {
     const btn = document.getElementById('btnConfirm');
     btn.classList.add('loading'); btn.disabled = true;
-    const orderNum = generateOrderNumber();
     const payload = {
-      numeroPedido:  orderNum,
       nombre:        document.getElementById('nombre').value.trim(),
       telefono:      document.getElementById('telefono').value.trim(),
       cantidad:      parseInt(document.getElementById('cantidad').value),
@@ -695,11 +693,13 @@
       sinGuarnicion: document.getElementById('sinGuarnicion').checked,
     };
     try {
-      await fetch(CONFIG.scriptUrl, {
-        method: "POST", mode: "no-cors",
+      const resp = await fetch(CONFIG.scriptUrl, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+      const result = await resp.json();
+      const orderNum = result.numeroPedido || "PM-?";
       closeModal();
       showSuccessScreen(orderNum);
     } catch(err) {

@@ -281,7 +281,7 @@ footer{background:var(--charcoal);padding:28px 20px;text-align:center}
     const numDisplay = nextOrderNum ? 'PM-' + nextOrderNum : '(en proceso)';
     const cant = document.getElementById('cantidad').value;
     const rows = [
-      { label: "N° de pedido",    value: numDisplay, highlight: true },
+      // N° de pedido se muestra solo en pantalla de éxito
       { label: "Comprador",       value: document.getElementById('nombre').value.trim() },
       { label: "Teléfono",        value: document.getElementById('telefono').value.trim() },
       { label: "Cantidad",        value: cant + ' pollo' + (cant > 1 ? 's' : ''), highlight: true },
